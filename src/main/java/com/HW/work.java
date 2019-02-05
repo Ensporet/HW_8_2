@@ -1,3 +1,6 @@
+/**
+ * @version 2
+ */
 package com.HW;
 
 
@@ -11,9 +14,13 @@ import org.apache.log4j.Logger;
 import java.util.Scanner;
 import java.util.concurrent.Exchanger;
 
+/**
+ * main class
+ */
 public class work {
 
-    private final static Logger logger = Logger.getLogger(work.class);
+    private final static Logger logger = Logger.getLogger(work.class); //
+
 
     public static void main(String[] args) {
 
@@ -49,7 +56,7 @@ public class work {
                         ) {
                             @Override
                             public Enter_null<Object> action() {// exit from the program by exiting the array of actions using the "x".
-                                                                // The line processor defines the string as a command to exit the entire system
+                                // The line processor defines the string as a command to exit the entire system
                                 super.action();
 
                                 try {
@@ -102,6 +109,7 @@ public class work {
 
                         Exchanger<String> exchanger1 = new Exchanger<>();
                         int sizeTestArray = 80000000;
+                        int workers = 10;
                         this.exchang(array);
 
                         new Thread() {
@@ -111,23 +119,26 @@ public class work {
                                 String s = "Tack 2 :";
                                 for (int i = 0; i < getObject(); i++) {
 
+                                    try {
+                                        new Count().sinCos(workers, sizeTestArray, exchanger1);
+                                        s += "\n" + exchanger1.exchange(null) + "(" + workers + ")";
+                                        new Count().sinCos(1, sizeTestArray, exchanger1);
+                                        s += "\n" + exchanger1.exchange(null) + "(" + 1 + ")";
+                                    } catch (InterruptedException iE) {
+                                        iE.printStackTrace();
+                                    }
 
-                                    Count c = new Count(1, sizeTestArray, exchanger1);
-                                    try {
-                                        s += "\n" + exchanger1.exchange(null);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                    Count c2 = new Count(10, sizeTestArray, exchanger1);
-                                    try {
-                                        s += "\n" + exchanger1.exchange(null);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
+                                    s += "\n";
                                 }
 
-                                logger.info(s);
 
+                                logger.info("Tack 2 is dan");
+
+                                try {
+                                    exchanger.exchange(s);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
 
                                 get().exchang(array);
 
@@ -147,7 +158,7 @@ public class work {
                     public Object action() {
                         Object obj = super.action();
 
-                        tack2_run.setObject(0);
+                        tack2_run.setObject(-1);
 
 
                         //this.exchang(ConsoleElement.this.getEnter_array());

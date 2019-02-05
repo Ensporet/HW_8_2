@@ -1,102 +1,159 @@
+/**
+ * HW 8 2 Tack 2
+ */
 package com.HW.tasc_2;
 
+import com.Ens_Library.Ens_RunTheard.RunTheard_Exchanger;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
-
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.locks.Lock;
 
+/**
+ * class for run (sin() + cos())
+ */
 public class Count {
 
 
-    public Count(int work, int numbers, Exchanger<String> exs) {
+    /**
+     *
+     */
+    public Count() {
+    }
 
+    /**
+     * Run tack 2
+     *
+     * @param workers   size Run Thread
+     * @param sizeArray size for created array integer
+     * @param e         Exchanger for return value in format String
+     */
+    public void sinCos(int workers, int sizeArray, Exchanger<String> e) {
 
-        int i = numbers;
-        int workers = work;
-        int stepp = (i / workers);
-        int res = i - ((i / workers) * workers);
-        CountDownLatch countDownLatch = new CountDownLatch(work);
-        Date date = new Date();
+        if (sizeArray < 1) {
+            try {
+                e.exchange(null);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+        }
 
-        for (int w = 1; w <= work; w++) {
+        if (workers > sizeArray) {
+            workers = sizeArray;
+        }
+        //----
 
-            int pl = 0;
+        Date date = new Date(); //date os start
+        double dabl = 0; //for plus all numbers (sin() + cos())
 
-            if (w == workers) {
+        if (workers < 2) {                                      //if workers one
 
-                pl = res;
+            for (int i = 1; i <= sizeArray; i++) {
 
+                //dabl += (double) i;
+
+                // Other solutions
+                dabl += Math.sin((double)i) + Math.cos((double)i) ;
+                //dabl += new BigDecimal(Math.sin(i) + Math.cos(i)).setScale(10, RoundingMode.UP).doubleValue();
+                // dabl =  new BigDecimal(dabl +Math.sin(i) + Math.cos(i)).setScale(10, RoundingMode.UP).doubleValue();
             }
 
 
-            int size = stepp + pl;
-            int start = ((w - 1) * stepp) + 1;
+        } else {                                                //if workers > one
 
-            new Th(start, size) {
+            int stepp = (sizeArray / workers);
+            int last = sizeArray - (stepp * workers);
+            double[] re = new double[workers];
+            CountDownLatch countDownLatch = new CountDownLatch(workers);
+
+            int i = 1;
+            while (i <= sizeArray) {
 
 
+                int st = (stepp + ((last > 0) ? 1 : 0));
+                last--;
+                int in = i;
+                int wor = workers;
+                workers--;
+                Thread thread = new Thread() {                              //run
+                    final int st0 = st;
+                    int in0 = in;
+                    final int wor0 = (wor - 1);
+
+
+                    @Override
+                    public void run() {
+                        super.run();
+
+                        double d = 0;
+                        int i = (in0 + st0);
+
+                        while (in0 < i) {
+
+                            d += (Math.sin((double) in0) + Math.cos((double) in0));
+
+                            // Other solutions
+                            //d += (double) in0;
+                            //d += new BigDecimal(Math.sin(in0) + Math.cos(in0)).setScale(10, RoundingMode.DOWN).doubleValue();
+                            //d = new BigDecimal(d + Math.sin(in0) + Math.cos(in0)).setScale(10, RoundingMode.DOWN).doubleValue();
+
+                            in0++;
+                        }
+
+                        re[wor0] = d;
+                        countDownLatch.countDown();
+
+
+                        //System.out.println( "[" + st0 + "\nres:"+d +"\n"+ in0 + "]\n");
+
+                    }
+                };
+                thread.setDaemon(!thread.isDaemon());
+                thread.start();                                             //run start()
+
+                i += (st);
+            }
+
+
+            Thread th = new Thread() {
                 @Override
                 public void run() {
                     super.run();
+                    try {
+                        countDownLatch.await();
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
 
-                    addResult(this.plasSinCos(this.bild(this.getSize(), this.getStart())));
+                    double finDouble = 0;
+                    for (double d0 : re) {
+                        finDouble += d0;
+                    }
 
-                    countDownLatch.countDown();
-
+                    finDouble = new BigDecimal(finDouble).setScale(10, RoundingMode.DOWN).doubleValue();
+                    try {
+                        e.exchange("Runner dan of : " + (new Date().getTime() - date.getTime()) + " milliseconds , return : " + finDouble);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
                 }
-            }.start();
+            };
+            th.setDaemon(!th.isDaemon());
+            th.start();
 
+            return;
         }
 
 
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    countDownLatch.await();
-                    exs.exchange("endWork " + Count.this.getResult() + " time : " + (new Date().getTime() - date.getTime()) + " runThread : " + work);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-
-            }
-        }.start();
-
+        /**
+         * return
+         */
+        new RunTheard_Exchanger<String>(e, "Runner dan of : " + (new Date().getTime() - date.getTime()) + " milliseconds , return : " +
+                new BigDecimal(dabl).setScale(10, RoundingMode.DOWN).doubleValue()).start();
 
     }
 
 
-    //-------------------------------------------------------------------
-    private Lock lock = new java.util.concurrent.locks.ReentrantLock();
-
-    public Lock getLock() {
-        return lock;
-    }
-
-    //-------------------------------
-    private double result;
-
-    private void addResult(double d) {
-
-        lock.lock();
-
-
-        setResult(getResult() + d);
-
-        lock.unlock();
-    }
-
-
-    public double getResult() {
-
-
-        return result;
-    }
-
-    public void setResult(double result) {
-
-        this.result = result;
-    }
 }
